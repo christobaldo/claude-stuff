@@ -101,7 +101,13 @@ const calendarOf = (ms: number) => {
 }
 
 // The day a moment belongs to, `2026-11-02`, which 02:30 on the 3rd still is.
-const dayOf = (ms: number) => calendarOf(ms - DAY_STARTS_HOUR * 3_600_000)
+// Read on the local clock, so the night clocks change still turns at 05:00.
+const dayOf = (ms: number) => {
+  const d = new Date(ms)
+  return d.getHours() >= DAY_STARTS_HOUR
+    ? calendarOf(ms)
+    : calendarOf(new Date(d.getFullYear(), d.getMonth(), d.getDate() - 1, 12).getTime())
+}
 
 const weekdayOf = (date: string) => WEEKDAYS[new Date(`${date}T12:00:00`).getDay()] ?? ''
 
@@ -838,13 +844,14 @@ export const register: Register = (on, options) => {
       before === undefined || before.dayId === turn.dayId
         ? undefined
         : (await read($, days)).find(day => day.id === before.dayId)
-    await saveSummary($)
 
     const tail = tailOf(e.answer)
     if (tail !== '') {
       const timed: TimedLine = { tail, line: lineOf(turn, end), day: closed && dayLineOf(closed) }
       await update($, lines, all => [...all, timed].slice(-KEEP_LINES))
     }
+    // Saved after the line, so a restart still draws it.
+    await saveSummary($)
 
     return ran
   })

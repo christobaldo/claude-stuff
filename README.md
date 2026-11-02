@@ -117,7 +117,7 @@ claude plugin marketplace update claude-stuff
 claude plugin update session-monitor@claude-stuff
 ```
 
-While the repository is private, the machine needs a git credential for github.com first (an SSH key, or
+Installing from a private copy (a private fork, say) needs a git credential for github.com first (an SSH key, or
 `gh auth login` then `gh auth setup-git`); the install never prompts for one.
 
 ## Developing a mod
@@ -162,8 +162,8 @@ christobaldo/claude-stuff"):
 
 Updating later: `claude plugin marketplace update claude-stuff`, then
 `claude plugin update session-monitor@claude-stuff`, then a restart. Removing: `claude plugin uninstall
-session-monitor@claude-stuff`. If an install fails on authentication, the repository is not public: the machine needs a
-git credential for github.com (`gh auth login`, then `gh auth setup-git`).
+session-monitor@claude-stuff`. If an install fails, check the marketplace name and the network first; a private copy
+of the repository also needs a git credential for github.com (`gh auth login`, then `gh auth setup-git`).
 
 Changing a mod here: edit `mods/<mod>/`, run validate and test (above), bump `version` in its `plugin.json`, commit;
 push only with the owner's yes.
