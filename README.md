@@ -11,11 +11,15 @@ with one line.
 
 The Session Monitor: every interaction (a prompt and its answer) split into **Claude's time** and its parts, **your
 time** (idle before it, answering during it), operator efficiency, tokens and the 5-hour and weekly quota, day by day.
-![The Session Monitor pane: the line under a reply, 5h and weekly quota gauges with forecasts, and the operator efficiency and Claude's time donuts](docs/session-monitor.svg)
+
+![The Session Monitor pane: 5h and weekly quota gauges with forecasts, and the operator efficiency and Claude's time donuts](docs/session-monitor.svg)
 
 ![The pane's table of the session's interactions: today's summary, each interaction, then earlier days](docs/session-monitor-history.svg)
 
-*Drawn from the mod's own output with a sample morning and two `demo` days.*
+![The chat: under each reply, the italic line with the interaction's times, parts, tokens and quota moves; under the first reply of a day, the finished day's line](docs/session-monitor-chat.svg)
+
+*The pane is drawn from the mod's own output with a sample morning and two `demo` days; the chat shows its lines
+for the same morning.*
 
 - **Under every reply**, an italic line, numbered within the day, each quota in bold after a dot in its gauge's colour
   (🟢 under 50%, 🟡 under 80%, 🔴 above):

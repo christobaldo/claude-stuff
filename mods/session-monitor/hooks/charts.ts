@@ -100,7 +100,7 @@ export const SIGNALS = { green: '#59b37a', amber: '#e3a857', red: '#d9534f' } as
 // the chart gives its own, shrunk to fit.
 export const gaugeOf = (chart: { percent: number; caption: string; note: string; color?: string; center?: string }) => {
   const width = 150
-  const height = 100
+  const height = 110
   const percent = Math.max(0, Math.min(100, chart.percent))
   const color = chart.color ?? (percent < 50 ? SIGNALS.green : percent < 80 ? SIGNALS.amber : SIGNALS.red)
   const arc = 'M 25 70 A 50 50 0 0 1 125 70'
@@ -112,7 +112,7 @@ export const gaugeOf = (chart: { percent: number; caption: string; note: string;
     `<path d="${arc}" fill="none" stroke="${color}" stroke-width="12" stroke-linecap="round" pathLength="100" ` +
     `stroke-dasharray="${percent} 100"/>` +
     `<text class="t b" x="75" y="66" text-anchor="middle"${size < 15 ? ` style="font-size:${size}px"` : ''}>${escape(shown)}</text>` +
-    `<text class="t" x="75" y="84" text-anchor="middle">${escape(chart.caption)}</text>` +
-    `<text class="t" x="75" y="95" text-anchor="middle" opacity="0.7">${escape(chart.note)}</text></svg>`
+    `<text class="t" x="75" y="93" text-anchor="middle">${escape(chart.caption)}</text>` +
+    `<text class="t" x="75" y="105" text-anchor="middle" opacity="0.7">${escape(chart.note)}</text></svg>`
   return { source, width, height }
 }
