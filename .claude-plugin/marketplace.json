@@ -1,0 +1,15 @@
+{
+  "name": "claude-stuff",
+  "owner": {
+    "name": "christobaldo",
+    "email": "christobaldo.cbo@gmail.com"
+  },
+  "description": "Custom connectors, plugins, mods and more for Claude development",
+  "plugins": [
+    {
+      "name": "session-monitor",
+      "source": "./mods/session-monitor",
+      "description": "Each interaction split into Claude's time and its parts, your idle and answering time, operator efficiency, tokens and quota, day by day, with charts"
+    }
+  ]
+}
