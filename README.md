@@ -91,7 +91,14 @@ the app restarts gets them back; the store also keeps the last 50 sessions' summ
 
 Tokens are summed over every model request, subagents' included: "in" holds cache reads and writes. The quota is the
 account's, as the status line reads it (a subscription only, one decimal): its move over an interaction counts other
-sessions running meanwhile, and a window that reset during it shows where it stands alone. The line under a reply
+sessions running meanwhile, and a window that reset during it shows where it stands alone. A subagent counts toward the
+interaction that launched it: one waited on is its Agent call's time; one in the background adds its whole run, from
+its start to its answer, alongside the main loop (so the parts can add up to more than Claude's time), and its tokens,
+even when it answers after the interaction ended.
+
+**Limitations.** Extra usage (credits bought once a window is used up) is not visible to the mod: Claude Code reports
+only the windows' percentages, so a used-up window stays at 100% and what the credits pay for is not shown. A session
+signed in with API credits instead of a subscription has no windows, so the quota rows stay empty. The line under a reply
 only changes what is drawn; the transcript is left as it was.
 
 ## Install

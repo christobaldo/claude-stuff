@@ -393,6 +393,26 @@ const add = async ($: EngineInterface, sums: Partial<Sums>) => {
   })
 }
 
+// Subagents running, each with the interaction that launched it and when it
+// began: one launched in the background outlives its Agent call, and often
+// the interaction too.
+const agents = new Map<string, { home: string; start: number }>()
+
+// Adds to the interaction a subagent belongs to, finished or not, and to its
+// day once it has finished.
+const addTo = async ($: EngineInterface, agentId: string, sums: Partial<Sums>) => {
+  const home = agents.get(agentId)?.home
+  if (home === undefined) return add($, sums)
+  const more = { ...NO_SUMS, ...sums }
+  const one = (await read($, interactions)).find(each => each.id === home)
+  if (one === undefined) return
+  await update($, interactions, list => list.map(each => (each.id === home ? plus(each, more) : each)))
+  if (one.end !== null) {
+    await update($, days, all => all.map(day => (day.id === one.dayId ? plus(day, more) : day)))
+    await saveSummary($)
+  }
+}
+
 // The main loop's timeline: what is going on now. Each moment goes to one
 // part, the first that holds: the person answering, a tool running, a
 // subagent running, else the step's state. The counts are kept in the module;
@@ -657,6 +677,7 @@ export const register: Register = (on, options) => {
           if (key.startsWith(SNAPSHOT)) await $.store.delete(key)
         }
         Object.assign(live, idleLive())
+        agents.clear()
         return { text: `Cleared ${plural(turns, 'interaction')} and ${plural(earlier, 'earlier session')}.` }
       }
       case 'demo': {
@@ -697,6 +718,9 @@ export const register: Register = (on, options) => {
   // calls are added to the one it runs in, its time is its tool's.
   on('turn.start', async ($, e, next) => {
     if (e.agentId !== undefined) {
+      const list = await read($, interactions)
+      const home = (list.findLast(one => one.end === null) ?? list.at(-1))?.id
+      if (home !== undefined) agents.set(e.agentId, { home, start: await $.clock.now() })
       return next(e)
     }
     const start = await $.clock.now()
@@ -762,11 +786,12 @@ export const register: Register = (on, options) => {
           await enter(null)
           if (chunk.usage !== null) {
             const used = chunk.usage
-            await add($, {
+            const tokens = {
               inTokens: used.input_tokens + used.cache_read_input_tokens + used.cache_creation_input_tokens,
               outTokens: used.output_tokens,
               cachedTokens: used.cache_read_input_tokens,
-            })
+            }
+            await (main ? add($, tokens) : addTo($, e.agentId, tokens))
           }
         }
         yield chunk
@@ -804,13 +829,20 @@ export const register: Register = (on, options) => {
       if (main) {
         await change($, () => (live[kind] = Math.max(0, live[kind] - 1)))
       }
-      if (kind !== 'asks') await add($, { toolCalls: 1 })
+      if (kind !== 'asks') await (main ? add($, { toolCalls: 1 }) : addTo($, e.agentId, { toolCalls: 1 }))
     }
   })
 
   on('turn.complete', async ($, e, next) => {
     const ran = await next(e)
     if (e.agentId !== undefined) {
+      // A subagent waited on by its Agent call is already in the timeline;
+      // one in the background adds its whole run, alongside the main loop.
+      const agent = agents.get(e.agentId)
+      if (agent !== undefined && live.agents === 0) {
+        await addTo($, e.agentId, { subagentMs: (await $.clock.now()) - agent.start })
+      }
+      agents.delete(e.agentId)
       return ran
     }
 

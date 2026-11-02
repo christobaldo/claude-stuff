@@ -403,3 +403,27 @@ test('the quota forecast: the average pace since the window began, the recent pa
   const terminal = await pane($, 'terminal')
   expect(terminal.joined).toMatch(/5h quota 62% \(resets \d\d:00\) · pace so far: 89% at reset · last hour's pace: out \d\d:46/)
 })
+
+test('a subagent in the background counts its whole run and tokens, after its interaction ended', async ($, on) => {
+  const clock = engine(on)
+  on('turn.step', async function* (_, e) {
+    const usage = { model: 'haiku', input_tokens: 1000, output_tokens: 200, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 }
+    yield { kind: 'stop' as const, stopReason: 'end_turn' as const, usage }
+    return { turnId: e.turnId, index: e.index, answer: 'ok', toolUses: [], stopReason: 'end_turn' as const, usage }
+  })
+  await $.session.start({ cwd: '/', surface: 'desktop', isInteractive: true })
+  await $.turn.start({ text: 'launch it', turnId: 't1' })
+  // Launched in the background: it starts, the main turn ends a second later.
+  await $.turn.start({ text: 'count', turnId: 's1', agentId: 'a1' } as never)
+  await clock.advance(1000)
+  await $.turn.complete({ ...DONE, answer: 'Launched.', turnId: 't1' })
+  await clock.advance(6000)
+  for await (const _ of $.turn.step({ turnId: 's1', index: 0, model: 'haiku', messageCount: 1, agentId: 'a1' } as never)) {
+    // drained
+  }
+  await $.turn.complete({ ...DONE, answer: '21', turnId: 's1', agentId: 'a1' } as never)
+
+  const { joined } = await pane($)
+  // 7s of subagent beside 1s of Claude, and the subagent's 1.2k tokens.
+  expect(joined).toMatch(/\|1\|\d\d:\d\d:\d\d\|→\|\d\d:\d\d:\d\d\|-\|-\|│\|1\.0s\|-\|-\|-\|-\|7\.0s\|-\|│\|-\|1\.0k\|200\|/)
+})
