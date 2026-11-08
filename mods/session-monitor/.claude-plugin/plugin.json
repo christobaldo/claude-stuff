@@ -1,6 +1,6 @@
 {
   "name": "session-monitor",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "description": "Session monitor: every interaction split into Claude's time (model wait, thinking, writing, tools, subagents, misc), your answering and idle time, operator efficiency, tokens and quota, day by day, with charts",
   "author": {
     "name": "christobaldo",

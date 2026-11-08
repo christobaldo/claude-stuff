@@ -897,8 +897,18 @@ export const register: Register = (on, options) => {
       return next(e)
     }
     const added = [timed.line, timed.day].filter(line => line !== undefined)
+    // The reply drawn by the engine, untouched, and the line beneath it: a
+    // surface that marks rewritten replies (VS Code boxes them and stops their
+    // links) sees the engine's own row.
+    const own = await next(e)
+    const { Box, Markdown } = $.ui.resolve(e)
 
-    return next({ ...e, props: { ...e.props, text: `${e.props.text}\n\n${added.join('\n\n')}` } })
+    return (
+      <Box flexDirection="column">
+        {own}
+        <Markdown text={added.join('\n\n')} />
+      </Box>
+    )
   })
 
   // A label in the prompt footer: the running interaction, else the last one,
@@ -1110,13 +1120,28 @@ export const register: Register = (on, options) => {
     })
     const widthOf = (column: Column) =>
       Math.max(...COLUMNS[column].map(word => word.length), ...[...table, ...before].map(line => (line.row[column] ?? '').length))
+    // A narrow pane drops what matters least until the table fits: the text
+    // after each row, then the counts and quota, then the end and the person's
+    // time; Claude's time and its parts stay.
+    const room = e.props.bodyColumns ?? e.viewport?.columns ?? Number.POSITIVE_INFINITY
+    const afterWidth = Math.max(0, ...[...table, ...before].map(line => line.after.length))
+    const fitting = [
+      { groups: GROUPS, after: true },
+      { groups: GROUPS, after: false },
+      { groups: GROUPS.slice(0, 2), after: false },
+      { groups: [['n', 'start'], GROUPS[1] ?? []] as Column[][], after: false },
+    ]
+    const widthAt = (fit: (typeof fitting)[number]) =>
+      fit.groups.reduce((sum, group) => sum + group.reduce((all, column) => all + widthOf(column) + 1, 0) + 2, 0) +
+      (fit.after ? afterWidth : 0)
+    const fit = fitting.find(one => widthAt(one) <= room) ?? fitting[fitting.length - 1]!
     const bar = <Text color="subtle">│</Text>
     // A blank line between the headers and the rows: a drawn rule can't line
     // up with cells in a proportional font.
     const spacer = <Text> </Text>
     const draw = (line: Line | 'header' | 'header-top') => (
       <Box flexDirection="row" columnGap={1}>
-        {GROUPS.map((group, g) => (
+        {fit.groups.map((group, g) => (
           <Box flexDirection="row" columnGap={1}>
             {g > 0 && bar}
             {group.map(column => (
@@ -1132,8 +1157,8 @@ export const register: Register = (on, options) => {
             ))}
           </Box>
         ))}
-        {bar}
-        {typeof line !== 'string' && line.after !== '' && (
+        {fit.after && bar}
+        {fit.after && typeof line !== 'string' && line.after !== '' && (
           <Text dimColor={line.dim} bold={line.bold} wrap="truncate-end">
             {line.after}
           </Text>

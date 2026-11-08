@@ -42,7 +42,8 @@ for the same morning.*
   - **This session history**: a table in three groups set off by bars: `# · Start → End · Was idle · User answering`
     (grey and red), then in Claude's orange `Claude · Model wait · Thinking · Writing · Tools · Subagents · Misc`
     (**Claude**, in bold, is the sum of the others), then `Calls · In · Out · 5h quota · Week quota` (what each
-    interaction moved the window). Headers take two lines to keep columns narrow. Today's summary row (its date in
+    interaction moved the window). Headers take two lines to keep columns narrow. A narrow pane drops columns until the table fits: first the text
+    after each row, then the counts and quota, then the end time and your time; Claude's time and its parts stay. Today's summary row (its date in
     Start, each part with its share of Claude's time) heads today's interactions, newest first; each earlier day is
     one summary row. At most 100 interactions are kept; a day is never dropped, only reduced to its summary.
   - **Earlier sessions**: the five most recent (the last 50 are kept, in the mod's own store).
@@ -94,12 +95,12 @@ account's, as the status line reads it (a subscription only, one decimal): its m
 sessions running meanwhile, and a window that reset during it shows where it stands alone. A subagent counts toward the
 interaction that launched it: one waited on is its Agent call's time; one in the background adds its whole run, from
 its start to its answer, alongside the main loop (so the parts can add up to more than Claude's time), and its tokens,
-even when it answers after the interaction ended.
+even when it answers after the interaction ended. The line under a reply is drawn beneath the reply, which is left exactly as
+the engine draws it (links and all); the transcript is left as it was.
 
 **Limitations.** Extra usage (credits bought once a window is used up) is not visible to the mod: Claude Code reports
 only the windows' percentages, so a used-up window stays at 100% and what the credits pay for is not shown. A session
-signed in with API credits instead of a subscription has no windows, so the quota rows stay empty. The line under a reply
-only changes what is drawn; the transcript is left as it was.
+signed in with API credits instead of a subscription has no windows, so the quota rows stay empty.
 
 ## Install
 

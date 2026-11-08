@@ -9,7 +9,7 @@ const PANE = {
   props: {
     title: 'Session Monitor',
     isFocused: false,
-    bodyColumns: 160,
+    bodyColumns: 400,
     placement: 'dock',
     scroll: { offset: 0, bodyRows: 30 },
     view: {},
@@ -24,7 +24,8 @@ type Engine = Parameters<TestBody>[0]
 const engine = (
   on: On,
   percents = { fiveHour: 30, week: 60 },
-  now = Date.UTC(2026, 10, 2, 9, 0, 0),
+  // Local time, so what the tests expect holds in any time zone.
+  now = new Date(2026, 10, 2, 9, 0, 0).getTime(),
   stored: Record<string, unknown> = {},
 ) => {
   const clock = mock.clock(on, { now })
@@ -33,8 +34,8 @@ const engine = (
       startedAt: 0,
       context: { window: 200_000 },
       rateLimits: [
-        { kind: 'five_hour', percentUsed: percents.fiveHour, resetsAt: '2026-11-02T14:00:00Z' },
-        { kind: 'seven_day', percentUsed: percents.week, resetsAt: '2026-11-05T08:00:00Z' },
+        { kind: 'five_hour', percentUsed: percents.fiveHour, resetsAt: new Date(2026, 10, 2, 14).toISOString() },
+        { kind: 'seven_day', percentUsed: percents.week, resetsAt: new Date(2026, 10, 5, 8).toISOString() },
       ],
     },
   }))
@@ -70,9 +71,11 @@ const reply = async ($: Engine, text: string) => {
     plugin: 'session-monitor', component: 'AssistantMessage', surface: 'desktop',
     props: { text, isFirstOfReply: true },
   })
-  const drawn = (await ui.find({ type: 'Text' }))?.text ?? ''
+  // The engine's reply, then the mod's line beneath it.
+  const own = (await ui.find({ type: 'Text' }))?.text ?? ''
+  const line = String((await ui.find({ type: 'Markdown' }))?.props.text ?? '')
   await ui.unmount()
-  return drawn
+  return line === '' ? own : `${own}\n\n${line}`
 }
 
 // The pane's Texts in turn: each row's cells, the bars between the column
@@ -381,7 +384,7 @@ test('newest on top, at most 100 interactions', async ($, on) => {
 test('the quota forecast: the average pace since the window began, the recent pace from the readings', async ($, on) => {
   // 12:30, 3h 30m into the 5-hour window that resets at 14:00; the last
   // hour's reading stood at 32%.
-  const now = Date.UTC(2026, 10, 2, 12, 30, 0)
+  const now = new Date(2026, 10, 2, 12, 30, 0).getTime()
   engine(on, { fiveHour: 62, week: 30 }, now, { readings: [{ at: now - 3_600_000, fiveHour: 32, week: 29.5 }] })
   await $.session.start({ cwd: '/', surface: 'desktop', isInteractive: true })
   await turn($, 't1')
@@ -426,4 +429,27 @@ test('a subagent in the background counts its whole run and tokens, after its in
   const { joined } = await pane($)
   // 7s of subagent beside 1s of Claude, and the subagent's 1.2k tokens.
   expect(joined).toMatch(/\|1\|\d\d:\d\d:\d\d\|→\|\d\d:\d\d:\d\d\|-\|-\|│\|1\.0s\|-\|-\|-\|-\|7\.0s\|-\|│\|-\|1\.0k\|200\|/)
+})
+
+test('a narrow pane drops columns until the table fits, keeping Claude and its parts', async ($, on) => {
+  engine(on)
+  await $.session.start({ cwd: '/', surface: 'desktop', isInteractive: true })
+  await turn($, 't1')
+  const at = async (bodyColumns: number) => {
+    const ui = await $.ui.mount({ ...PANE, props: { ...PANE.props, bodyColumns }, surface: 'desktop' })
+    const joined = (await ui.findAll({ type: 'Text' })).map(cell => cell.text ?? '').join('|')
+    await ui.unmount()
+    return joined
+  }
+  const wide = await at(400)
+  expect(wide).toContain('|Calls|')
+  expect(wide).toContain('1 interaction')
+  const middle = await at(110)
+  expect(middle).not.toContain('|Calls|')
+  expect(middle).toContain('|Subagents|')
+  const narrow = await at(60)
+  expect(narrow).not.toContain('|End|')
+  expect(narrow).not.toContain('|answering|')
+  expect(narrow).toContain('|Claude|')
+  expect(narrow).toContain('|Misc|')
 })
