@@ -67,6 +67,8 @@ const days = atom({ plugin: 'session-monitor', key: 'days' } as const, [], { sha
 const clock = atom({ plugin: 'session-monitor', key: 'clock' } as const, NO_CLOCK, { shape: 'clock-1' })
 const history = atom({ plugin: 'session-monitor', key: 'history' } as const, [])
 const lines = atom({ plugin: 'session-monitor', key: 'lines' } as const, [], { shape: 'lines-2' })
+// Whether the lines are drawn under replies; kept across sessions.
+const chat = atom({ plugin: 'session-monitor', key: 'chat' } as const, true)
 const quota = atom({ plugin: 'session-monitor', key: 'quota' } as const, {})
 // The account's quota readings of the last 25 hours, at most one a minute,
 // kept in the store too: every session reads the same account.
@@ -602,12 +604,14 @@ export const register: Register = (on, options) => {
     `/${command} pause: a break; idle isn't counted until your next prompt.`,
     `/${command} reset: wipe everything: all days and the earlier sessions' history.`,
     `/${command} demo: add two made-up earlier days, to see the multi-day view; demo off removes them.`,
+    `/${command} chatoff: no line under replies (the pane and the footer stay); chaton brings it back.`,
     `/${command} version: the installed version.`,
     `/${command} help: this list.`,
   ].join('\n')
 
   on('session.start', async ($, e, next) => {
     drawnCharts = { at: 0, running: false, charts: [] }
+    if ((await $.store.get('chat')) === false) await update($, chat, () => false)
     const stored = await $.store.get('sessions')
     if (Array.isArray(stored)) {
       await update($, history, () => stored as SessionSummary[])
@@ -697,6 +701,13 @@ export const register: Register = (on, options) => {
         const manifest = await $.fs.read(`${$.plugin.root}/.claude-plugin/plugin.json`).catch(() => '{}')
         const version = (JSON.parse(manifest) as { version?: unknown }).version
         return { text: `Session Monitor ${typeof version === 'string' ? version : '(version unknown)'}` }
+      }
+      case 'chaton':
+      case 'chatoff': {
+        const shown = words === 'chaton'
+        await update($, chat, () => shown)
+        await $.store.set('chat', shown)
+        return { text: shown ? 'The line under replies is back.' : 'No line under replies; /' + command + ' chaton brings it back.' }
       }
       case 'help':
         return { text: help }
@@ -891,6 +902,9 @@ export const register: Register = (on, options) => {
   // The timing line closes the reply: drawn under its last block, on every
   // surface; the transcript itself is left as it was.
   on('ui.render', { component: 'AssistantMessage' }, async ($, e, next) => {
+    if (!(await read($, chat))) {
+      return next(e)
+    }
     const text = e.props.text.trim()
     const timed = (await read($, lines)).findLast(one => text.endsWith(one.tail))
     if (timed === undefined) {
@@ -1120,29 +1134,16 @@ export const register: Register = (on, options) => {
     })
     const widthOf = (column: Column) =>
       Math.max(...COLUMNS[column].map(word => word.length), ...[...table, ...before].map(line => (line.row[column] ?? '').length))
-    // A narrow pane drops what matters least until the table fits: the text
-    // after each row, then the counts and quota, then the end and the person's
-    // time; Claude's time and its parts stay.
-    const room = e.props.bodyColumns ?? e.viewport?.columns ?? Number.POSITIVE_INFINITY
-    const afterWidth = Math.max(0, ...[...table, ...before].map(line => line.after.length))
-    const fitting = [
-      { groups: GROUPS, after: true },
-      { groups: GROUPS, after: false },
-      { groups: GROUPS.slice(0, 2), after: false },
-      { groups: [['n', 'start'], GROUPS[1] ?? []] as Column[][], after: false },
-    ]
-    const widthAt = (fit: (typeof fitting)[number]) =>
-      fit.groups.reduce((sum, group) => sum + group.reduce((all, column) => all + widthOf(column) + 1, 0) + 2, 0) +
-      (fit.after ? afterWidth : 0)
-    const fit = fitting.find(one => widthAt(one) <= room) ?? fitting[fitting.length - 1]!
     const bar = <Text color="subtle">│</Text>
     // A blank line between the headers and the rows: a drawn rule can't line
     // up with cells in a proportional font.
     const spacer = <Text> </Text>
+    // Each row is cut at the pane's right edge rather than wrapped: a wider
+    // pane shows more of it, with no redraw.
     const draw = (line: Line | 'header' | 'header-top') => (
-      <Box flexDirection="row" columnGap={1}>
-        {fit.groups.map((group, g) => (
-          <Box flexDirection="row" columnGap={1}>
+      <Box flexDirection="row" columnGap={1} overflow="hidden">
+        {GROUPS.map((group, g) => (
+          <Box flexDirection="row" columnGap={1} flexShrink={0}>
             {g > 0 && bar}
             {group.map(column => (
               <Box width={widthOf(column)} flexShrink={0} justifyContent="flex-end">
@@ -1157,8 +1158,8 @@ export const register: Register = (on, options) => {
             ))}
           </Box>
         ))}
-        {fit.after && bar}
-        {fit.after && typeof line !== 'string' && line.after !== '' && (
+        {bar}
+        {typeof line !== 'string' && line.after !== '' && (
           <Text dimColor={line.dim} bold={line.bold} wrap="truncate-end">
             {line.after}
           </Text>

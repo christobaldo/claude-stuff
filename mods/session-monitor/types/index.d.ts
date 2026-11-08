@@ -105,6 +105,7 @@ declare module 'claude-code' {
       lines: Shaped<TimedLine[]>
       quota: Quota
       readings: Reading[]
+      chat: boolean
     }
   }
 }

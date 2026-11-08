@@ -431,25 +431,20 @@ test('a subagent in the background counts its whole run and tokens, after its in
   expect(joined).toMatch(/\|1\|\d\d:\d\d:\d\d\|→\|\d\d:\d\d:\d\d\|-\|-\|│\|1\.0s\|-\|-\|-\|-\|7\.0s\|-\|│\|-\|1\.0k\|200\|/)
 })
 
-test('a narrow pane drops columns until the table fits, keeping Claude and its parts', async ($, on) => {
+test('chatoff stops the line under replies, chaton brings it back, and it is kept for the next session', async ($, on) => {
   engine(on)
   await $.session.start({ cwd: '/', surface: 'desktop', isInteractive: true })
   await turn($, 't1')
-  const at = async (bodyColumns: number) => {
-    const ui = await $.ui.mount({ ...PANE, props: { ...PANE.props, bodyColumns }, surface: 'desktop' })
-    const joined = (await ui.findAll({ type: 'Text' })).map(cell => cell.text ?? '').join('|')
-    await ui.unmount()
-    return joined
-  }
-  const wide = await at(400)
-  expect(wide).toContain('|Calls|')
-  expect(wide).toContain('1 interaction')
-  const middle = await at(110)
-  expect(middle).not.toContain('|Calls|')
-  expect(middle).toContain('|Subagents|')
-  const narrow = await at(60)
-  expect(narrow).not.toContain('|End|')
-  expect(narrow).not.toContain('|answering|')
-  expect(narrow).toContain('|Claude|')
-  expect(narrow).toContain('|Misc|')
+  expect(await reply($, 'Answer t1.')).toMatch(/\n\n\*⏱ #1 · /)
+  expect((await run($, 'chatoff')).text).toMatch(/^No line under replies/)
+  expect(await reply($, 'Answer t1.')).toBe('Answer t1.')
+  expect((await run($, 'chaton')).text).toBe('The line under replies is back.')
+  expect(await reply($, 'Answer t1.')).toMatch(/\n\n\*⏱ #1 · /)
+})
+
+test('a chatoff kept from an earlier session holds from the start', async ($, on) => {
+  engine(on, undefined, undefined, { chat: false })
+  await $.session.start({ cwd: '/', surface: 'desktop', isInteractive: true })
+  await turn($, 't1')
+  expect(await reply($, 'Answer t1.')).toBe('Answer t1.')
 })

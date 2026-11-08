@@ -42,8 +42,8 @@ for the same morning.*
   - **This session history**: a table in three groups set off by bars: `# · Start → End · Was idle · User answering`
     (grey and red), then in Claude's orange `Claude · Model wait · Thinking · Writing · Tools · Subagents · Misc`
     (**Claude**, in bold, is the sum of the others), then `Calls · In · Out · 5h quota · Week quota` (what each
-    interaction moved the window). Headers take two lines to keep columns narrow. A narrow pane drops columns until the table fits: first the text
-    after each row, then the counts and quota, then the end time and your time; Claude's time and its parts stay. Today's summary row (its date in
+    interaction moved the window). Headers take two lines to keep columns narrow. Rows are cut at the pane's right edge, never wrapped: widen the pane
+    to see the columns on the right. Today's summary row (its date in
     Start, each part with its share of Claude's time) heads today's interactions, newest first; each earlier day is
     one summary row. At most 100 interactions are kept; a day is never dropped, only reduced to its summary.
   - **Earlier sessions**: the five most recent (the last 50 are kept, in the mod's own store).
@@ -56,6 +56,8 @@ for the same morning.*
 | `/session-monitor pause` | A break: idle isn't counted until the next prompt |
 | `/session-monitor reset` | Wipes everything: all days and the earlier sessions' history |
 | `/session-monitor demo` | Adds two made-up earlier days, marked `(demo)`, to see the multi-day view; `demo off` removes them |
+| `/session-monitor chatoff` | No line under replies (the pane and the footer stay); kept across sessions |
+| `/session-monitor chaton` | The line under replies again (the default) |
 | `/session-monitor version` | Shows the installed version |
 | `/session-monitor help` | Lists these |
 
