@@ -1141,9 +1141,9 @@ export const register: Register = (on, options) => {
     // Each row is cut at the pane's right edge rather than wrapped: a wider
     // pane shows more of it, with no redraw.
     const draw = (line: Line | 'header' | 'header-top') => (
-      <Box flexDirection="row" columnGap={1} overflow="hidden">
+      <Box flexDirection="row" flexWrap="nowrap" columnGap={1} width="100%" overflow="hidden">
         {GROUPS.map((group, g) => (
-          <Box flexDirection="row" columnGap={1} flexShrink={0}>
+          <Box flexDirection="row" flexWrap="nowrap" columnGap={1} flexShrink={0}>
             {g > 0 && bar}
             {group.map(column => (
               <Box width={widthOf(column)} flexShrink={0} justifyContent="flex-end">
