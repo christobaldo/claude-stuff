@@ -952,6 +952,10 @@ export const register: Register = (on, options) => {
     const { Box, Text } = elements
     // The terminal has no Svg: it shows the figures as text.
     const Svg = e.surface !== 'terminal' && 'Svg' in elements ? elements.Svg : undefined
+    // Dim text is grey enough in the terminal, but too faint on the desktop
+    // app's and VS Code's dark themes: there it keeps the theme's own text colour.
+    const terminal = e.surface === 'terminal'
+    const dim = (wanted = true) => terminal && wanted
     const list = await read($, interactions)
     const kept = await read($, days)
     const past = await read($, history)
@@ -1149,8 +1153,8 @@ export const register: Register = (on, options) => {
               <Box width={widthOf(column)} flexShrink={0} justifyContent="flex-end">
                 <Text
                   bold={typeof line === 'string' || line.bold || column === 'claude'}
-                  dimColor={typeof line !== 'string' && line.dim}
-                  color={COLUMN_COLORS[column] ?? GROUP_COLORS[g]}
+                  dimColor={dim(typeof line !== 'string' && line.dim)}
+                  color={(terminal ? COLUMN_COLORS[column] : undefined) ?? GROUP_COLORS[g]}
                 >
                   {line === 'header-top' ? COLUMNS[column][0] : line === 'header' ? COLUMNS[column][1] : (line.row[column] ?? '')}
                 </Text>
@@ -1160,7 +1164,7 @@ export const register: Register = (on, options) => {
         ))}
         {bar}
         {typeof line !== 'string' && line.after !== '' && (
-          <Text dimColor={line.dim} bold={line.bold} wrap="truncate-end">
+          <Text dimColor={dim(line.dim)} bold={line.bold} wrap="truncate-end">
             {line.after}
           </Text>
         )}
@@ -1173,10 +1177,10 @@ export const register: Register = (on, options) => {
           <Box flexDirection="column">
             <Box flexDirection="row" columnGap={2}>
               <Text bold>{row.title}</Text>
-              <Text dimColor>{row.about}</Text>
+              <Text dimColor={dim()}>{row.about}</Text>
             </Box>
             {Svg === undefined ? (
-              <Text dimColor>{row.words}</Text>
+              <Text dimColor={dim()}>{row.words}</Text>
             ) : (
               <Box flexDirection="row" columnGap={2} flexWrap="wrap">
                 {row.gauges.map(gauge => (
@@ -1188,7 +1192,7 @@ export const register: Register = (on, options) => {
         ))}
         <Box flexDirection="column">
           <Text bold>Interactions</Text>
-          <Text dimColor>{figures}</Text>
+          <Text dimColor={dim()}>{figures}</Text>
         </Box>
         {Svg !== undefined && charts.length > 0 && (
           <Box flexDirection="row" columnGap={2} flexWrap="wrap">

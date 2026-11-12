@@ -21,7 +21,7 @@ const STYLE =
   '<style>.t{fill:#333;font:11px -apple-system,system-ui,sans-serif}.b{font-weight:600;font-size:15px}' +
   '.c{font-weight:600;font-size:12px}.track{stroke:#e4e4e4}.arc{transition:opacity .1s,stroke-width .1s}' +
   '.hl{opacity:0}.row{cursor:default}' +
-  '@media (prefers-color-scheme:dark){.t{fill:#e6e6e6}.track{stroke:#444}}</style>'
+  '@media (prefers-color-scheme:dark){.t{fill:#f5f5f5}.track{stroke:#444}}</style>'
 
 // The donut's hole is about 50px wide: a longer center text gets a smaller font.
 const centerSizeOf = (text: string) => {
@@ -113,6 +113,6 @@ export const gaugeOf = (chart: { percent: number; caption: string; note: string;
     `stroke-dasharray="${percent} 100"/>` +
     `<text class="t b" x="75" y="66" text-anchor="middle"${size < 15 ? ` style="font-size:${size}px"` : ''}>${escape(shown)}</text>` +
     `<text class="t" x="75" y="93" text-anchor="middle">${escape(chart.caption)}</text>` +
-    `<text class="t" x="75" y="105" text-anchor="middle" opacity="0.7">${escape(chart.note)}</text></svg>`
+    `<text class="t" x="75" y="105" text-anchor="middle" opacity="0.85">${escape(chart.note)}</text></svg>`
   return { source, width, height }
 }
