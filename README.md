@@ -109,7 +109,7 @@ extension. The terminal drawing (figures as text, no charts) is covered by the a
 mod itself, so others are untested: editors built on VS Code (Cursor, Windsurf) run the same extension and should match
 VS Code; JetBrains IDEs run Claude Code in their terminal and get the terminal drawing; Windows, Linux and the mobile app
 have not been tried. In VS Code the line under a reply sits in a "From the session-monitor plugin" box, which VS Code
-draws around anything a plugin adds; a mod can't remove it. Off the terminal, secondary text is drawn in the theme's
+draws around anything a plugin adds, and it may show above the reply rather than under it; a mod can't change either. Off the terminal, secondary text is drawn in the theme's
 normal text colour rather than dimmed, for contrast on dark themes.
 
 ## Install
