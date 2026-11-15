@@ -138,7 +138,7 @@ test('Claude\'s parts add up to its time, misc taking the rest', async ($, on) =
   await $.turn.complete({ ...DONE, answer: 'All done here.', turnId: 't2' })
 
   expect(await reply($, 'All done here.')).toMatch(
-    /\n\n\*⏱ #2 · 09:00:31 → 09:00:46 · was idle 30\.0s · user answering 4\.0s · Claude 11\.0s — model wait 1\.0s · thinking 3\.0s · writing 1\.5s · tools 2\.0s \(2 calls\) · subagents 3\.0s · misc 0\.5s \(after last reply 0\.5s\) · 10k in \/ 1\.5k out\* · 🟢 \*\*5h \+0\.8% \(30\.8%\)\*\* · 🟡 \*\*week \+0\.2% \(60\.2%\)\*\*$/,
+    /\n\n\*⏱ #2 · 09:00:31 → 09:00:46 · was idle 30\.0s · user answering 4\.0s · Claude 11\.0s — model wait 1\.0s · thinking 3\.0s · writing 1\.5s · tools 2\.0s \(2 calls\) · subagents 3\.0s · misc 0\.5s · 10k in \/ 1\.5k out\* · 🟢 \*\*5h \+0\.8% \(30\.8%\)\*\* · 🟡 \*\*week \+0\.2% \(60\.2%\)\*\*$/,
   )
 
   const { texts, joined, charts } = await pane($)
@@ -174,62 +174,6 @@ test('Claude\'s parts add up to its time, misc taking the rest', async ($, on) =
   expect(terminal.charts).toBe(0)
   expect(terminal.joined).toMatch(/\|5h quota 30\.8% \(resets \d\d:00\)\|Weekly quota\|[^|]*\|Weekly quota 60\.2% \(resets Thu \d\d:00\) · pace so far: out Thu \d\d:09\|Interactions\|[^|]*\|This session history\|/)
   expect(terminal.joined).toContain('|Mon 02 Nov|||30.0s|4.0s|│|12.0s|')
-})
-
-test('experiment: misc split into permission, between and after, the rest other', async ($, on) => {
-  const clock = engine(on)
-  // The permission decision takes 1.5s, the tool 2s.
-  on('tool.check', async () => {
-    await clock.sleep(1500)
-    return { decision: 'allow' as const }
-  })
-  on('tool.call', async () => {
-    await clock.sleep(2000)
-    return { result: {} }
-  })
-  on('turn.step', async function* (_, e) {
-    await clock.sleep(1000)
-    yield { kind: 'stop' as const, stopReason: 'tool_use' as const, usage: null }
-    return { turnId: e.turnId, index: e.index, answer: '', toolUses: [], stopReason: 'tool_use' as const, usage: null }
-  })
-  await $.session.start({ cwd: '/', surface: 'desktop', isInteractive: true })
-  // The charts' descriptions, drawn mid-turn.
-  const alts = async () => {
-    const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
-    const found = (await ui.findAll({ type: 'Svg' })).map(svg => String(svg.props.alt))
-    await ui.unmount()
-    return found.join('\n')
-  }
-  await $.turn.start({ text: 'go', turnId: 't1' })
-  await clock.advance(700)
-  // Before the first step, the stretch so far is misc's other.
-  expect(await alts()).toContain('Misc: other 0.7s')
-  const step = (async () => {
-    for await (const _ of $.turn.step({ turnId: 't1', index: 0, model: 'opus', messageCount: 1 })) {
-      // drained
-    }
-  })()
-  await clock.advance(1000)
-  await step
-  await clock.advance(200)
-  // The engine decides the call, then runs it.
-  const check = $.tool.check({ tool: 'Bash', input: { command: 'ls' }, tool_use_id: 'toolu_1' } as never)
-  await clock.advance(1500)
-  await check
-  const call = $.tool.call({ tool: 'Bash', command: 'ls' })
-  await clock.advance(1000)
-  // 4.4s in, the charts drawn at 0.7s still stand; 5.8s in, they are drawn again.
-  expect(await alts()).toContain("Claude's time 0.7s: Misc: other 0.7s")
-  await clock.advance(1000)
-  await call
-  await clock.advance(400)
-  // The tool's stretch so far is its own, not other's.
-  expect(await alts()).toMatch(/Tools 2\.0s.*Misc: other 0\.7s/)
-  await $.turn.complete({ ...DONE, answer: 'Went.', turnId: 't1' })
-
-  expect(await reply($, 'Went.')).toMatch(
-    /· Claude 5\.8s — model wait 1\.0s · tools 2\.0s \(1 calls\) · misc 2\.8s \(permission 1\.5s · between steps 0\.2s · after last reply 0\.4s · other 0\.7s\)\* · 🟢 \*\*5h /,
-  )
 })
 
 test('a day runs from 05:00: idle across midnight counts, the next morning starts a day', async ($, on) => {
@@ -299,8 +243,8 @@ test('reset wipes everything; help lists the arguments', async ($, on) => {
   engine(on, undefined, undefined, {
     sessions: [{
       sessionId: 'earlier', startedAt: 0, lastAt: 0, turns: 3, wallMs: 9000, modelWaitMs: 0, thinkingMs: 0, writingMs: 0,
-      toolMs: 0, subagentMs: 0, answeringMs: 0, toolCalls: 0, idleMs: 0, permissionMs: 0, betweenMs: 0,
-      afterMs: 0, inTokens: 0, outTokens: 0, cachedTokens: 0,
+      toolMs: 0, subagentMs: 0, answeringMs: 0, toolCalls: 0, idleMs: 0,
+      inTokens: 0, outTokens: 0, cachedTokens: 0,
     }],
   })
   await $.session.start({ cwd: '/', surface: 'desktop', isInteractive: true })

@@ -14,8 +14,6 @@ export const COLORS = {
   misc: '#c8c8c8',
 } as const
 
-// Experiment: greys for the parts of misc.
-export const MISC_SHADES = ['#b0b0b0', '#c8c8c8', '#9c9c9c', '#dadada', '#858585']
 
 const STYLE =
   '<style>.t{fill:#333;font:11px -apple-system,system-ui,sans-serif}.b{font-weight:600;font-size:15px}' +

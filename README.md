@@ -36,7 +36,7 @@ for the same morning.*
     gauge shows the pace so far and says `Measuring recent pace`. The terminal shows the same as text.
   - **Interactions**: days, interactions, interactions per day, Claude's average time per interaction, efficiency, the
     cached share of input tokens; then two charts (desktop): **Operator efficiency** (Claude, user
-    answering, was idle) and **Claude's time** (its parts, largest first, misc's parts in a second legend column), shown from the start with every slice
+    answering, was idle) and **Claude's time** (its parts, largest first), shown from the start with every slice
     at 0s until the first answer ends; while an interaction runs they are redrawn at most every 5 seconds. Pointing at a slice, or at its legend row, thickens the slice, fades the others
     and highlights the row.
   - **This session history**: a table in three groups set off by bars: `# · Start → End · Was idle · User answering`
@@ -75,12 +75,6 @@ nothing streamed back yet), **thinking**, **writing** (visible text or a tool ca
 **Claude** = the wall time less user answering; **misc** is what Claude's parts leave: the engine's own work between
 steps (building the request, hooks, the turn's start and end, a tool call's permission decision). A subagent's own
 tokens and tool calls are added to the interaction.
-
-*Experiment (since 0.7, may be rolled back):* misc is broken down as measured: **permission** (from a tool call's
-permission check until the tool starts: the auto-mode classifier, or a permission dialog the person answers),
-**between steps**, **after last reply**, and **other** for the rest (the engine's start of the turn included). It
-shows in the line under each reply (`misc 2.8s (permission 1.5s · between steps 0.2s · …)`) and as grey slices of the
-Interactions chart; the table keeps a single Misc column.
 
 **Was idle** is the gap since the previous answer or `startday` (a break, from `pause` to the next prompt, is left out; time on `/compact` or
 another local command falls in it). A day runs from 05:00 to 05:00 local: a late night belongs to the day before; the

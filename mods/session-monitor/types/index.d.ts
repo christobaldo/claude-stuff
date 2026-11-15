@@ -27,19 +27,11 @@ export type Sums = Tokens & {
   // Before the interaction: the gap since the previous one ended or a day's
   // start, less a pause; none on a day's first or while the day is stopped.
   idleMs: number
-  // Experiment: what Claude's misc holds. The permission decision before a
-  // tool runs (the auto-mode classifier, or a dialog the person answers), and
-  // the stretches nothing ran in between steps and after the last reply; the
-  // one before the first model request is left in misc's other.
-  permissionMs: number
-  betweenMs: number
-  afterMs: number
 }
 
 // The parts a stretch of the main loop's timeline can go to.
 export type StretchKey =
-  | 'answeringMs' | 'toolMs' | 'subagentMs' | 'permissionMs' | 'thinkingMs' | 'writingMs' | 'modelWaitMs'
-  | 'betweenMs' | 'afterMs'
+  | 'answeringMs' | 'toolMs' | 'subagentMs' | 'thinkingMs' | 'writingMs' | 'modelWaitMs'
 
 // One interaction: a main-loop turn, from the prompt to the answer.
 export type Interaction = Sums & {
@@ -55,7 +47,7 @@ export type Interaction = Sums & {
   quotaEnd: Quota | null
   // While it runs: the stretch since the timeline's last change, and the
   // part it goes to.
-  // null: a stretch no part takes, left in misc's other.
+  // null: a stretch no part takes, left in misc.
   stretch?: { since: number; key: StretchKey | null }
 }
 

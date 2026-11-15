@@ -16,7 +16,7 @@ import type {
   Tokens,
 } from '../types'
 
-import { COLORS, donutOf, gaugeOf, MISC_SHADES, SIGNALS } from './charts'
+import { COLORS, donutOf, gaugeOf, SIGNALS } from './charts'
 import { outlookOf, signalOf } from './forecast'
 import type { Forecast, WindowKind } from './forecast'
 
@@ -50,9 +50,6 @@ const NO_SUMS: Sums = {
   answeringMs: 0,
   toolCalls: 0,
   idleMs: 0,
-  permissionMs: 0,
-  betweenMs: 0,
-  afterMs: 0,
   ...NO_TOKENS,
 }
 
@@ -198,9 +195,6 @@ const plus = <T extends Sums>(one: T, more: Sums): T => ({
   answeringMs: one.answeringMs + more.answeringMs,
   toolCalls: one.toolCalls + more.toolCalls,
   idleMs: one.idleMs + more.idleMs,
-  permissionMs: one.permissionMs + more.permissionMs,
-  betweenMs: one.betweenMs + more.betweenMs,
-  afterMs: one.afterMs + more.afterMs,
   inTokens: one.inTokens + more.inTokens,
   outTokens: one.outTokens + more.outTokens,
   cachedTokens: one.cachedTokens + more.cachedTokens,
@@ -229,20 +223,6 @@ const shareOf = (ms: number, of: number) => (ms > 0 && of > 0 ? ` (${Math.round(
 const cachedOf = (tokens: Tokens) =>
   tokens.inTokens > 0 ? `${Math.round((tokens.cachedTokens / tokens.inTokens) * 100)}% cached` : ''
 
-// Experiment: what misc holds, as measured; `other` is what is left of it.
-const MISC_PARTS = [
-  { key: 'permissionMs', name: 'permission' },
-  { key: 'betweenMs', name: 'between steps' },
-  { key: 'afterMs', name: 'after last reply' },
-] as const
-
-const miscPartsOf = (sums: Sums, wallMs: number) => {
-  const misc = miscOf(sums, wallMs)
-  const parts: { name: string; ms: number }[] = MISC_PARTS.map(part => ({ name: part.name, ms: sums[part.key] }))
-  parts.push({ name: 'other', ms: Math.max(0, misc - parts.reduce((ms, part) => ms + part.ms, 0)) })
-  return parts.filter(part => part.ms >= 50)
-}
-
 // The chat's words for Claude's parts: `model wait 1.0s · … · misc 0.5s`,
 // each with its share of Claude's time where `withShares`.
 const partsOf = (sums: Sums, wallMs: number, withShares = false) => {
@@ -255,10 +235,7 @@ const partsOf = (sums: Sums, wallMs: number, withShares = false) => {
     parts.push(`${part.name} ${durationOf(ms)}${share(ms)}${part.key === 'toolMs' ? ` (${sums.toolCalls} calls)` : ''}`)
   }
   const misc = miscOf(sums, wallMs)
-  if (misc >= 50) {
-    const inside = miscPartsOf(sums, wallMs).map(part => `${part.name} ${durationOf(part.ms)}`)
-    parts.push(`misc ${durationOf(misc)}${share(misc)}${inside.length === 0 ? '' : ` (${inside.join(' · ')})`}`)
-  }
+  if (misc >= 50) parts.push(`misc ${durationOf(misc)}${share(misc)}`)
   if (sums.inTokens + sums.outTokens > 0) parts.push(`${tokensOf(sums.inTokens)} in / ${tokensOf(sums.outTokens)} out`)
   return parts.join(' · ')
 }
@@ -420,13 +397,12 @@ const addTo = async ($: EngineInterface, agentId: string, sums: Partial<Sums>) =
 // subagent running, else the step's state. The counts are kept in the module;
 // the stretch since the last change is kept in the running interaction, so
 // that a drawing reads its parts and its stretch as one.
-type Activity = 'answering' | 'tools' | 'subagents' | 'permission' | 'thinking' | 'writing' | 'modelWait'
+type Activity = 'answering' | 'tools' | 'subagents' | 'thinking' | 'writing' | 'modelWait'
 type StepState = 'modelWait' | 'thinking' | 'writing' | null
 const ACTIVITY_KEYS = {
   answering: 'answeringMs',
   tools: 'toolMs',
   subagents: 'subagentMs',
-  permission: 'permissionMs',
   thinking: 'thinkingMs',
   writing: 'writingMs',
   modelWait: 'modelWaitMs',
@@ -436,11 +412,8 @@ const live = {
   tools: 0,
   agents: 0,
   asks: 0,
-  // Experiment: tool calls being decided, and the steps begun this turn.
-  checks: new Set<string>(),
-  steps: 0,
 }
-const idleLive = () => ({ step: null, tools: 0, agents: 0, asks: 0, checks: new Set<string>(), steps: 0 })
+const idleLive = () => ({ step: null, tools: 0, agents: 0, asks: 0 })
 
 const activityOf = (): Activity | null =>
   live.asks > 0
@@ -449,42 +422,37 @@ const activityOf = (): Activity | null =>
       ? 'tools'
       : live.agents > 0
         ? 'subagents'
-        : live.checks.size > 0
-          ? 'permission'
-          : live.step
+        : live.step
 
 // Where the stretch beginning now goes: to what is going on; a stretch nothing
-// runs in goes, as an experiment, to between steps, or before the first step
-// to none of them.
+// runs in goes to no part, and so to misc.
 const stretchKeyOf = (): StretchKey | null => {
   const activity = activityOf()
-  return activity !== null ? ACTIVITY_KEYS[activity] : live.steps === 0 ? null : 'betweenMs'
+  return activity !== null ? ACTIVITY_KEYS[activity] : null
 }
 
 // Applies a change to the timeline: the running interaction's stretch goes to
-// its part and a new one begins, in one write. At the turn's end a stretch
-// between steps is the one after the last reply.
-const change = async ($: EngineInterface, apply: () => void, atEnd = false) => {
+// its part and a new one begins, in one write.
+const change = async ($: EngineInterface, apply: () => void) => {
   const now = await $.clock.now()
   apply()
   const key = stretchKeyOf()
   await update($, interactions, list => {
     const at = list.findLastIndex(one => one.end === null)
-    return at === -1 ? list : list.map((one, i) => (i === at ? closeStretch(one, now, atEnd, key) : one))
+    return at === -1 ? list : list.map((one, i) => (i === at ? closeStretch(one, now, key) : one))
   })
 }
 
-const closeStretch = (one: Interaction, now: number, atEnd: boolean, key: StretchKey | null): Interaction => {
-  const ran = one.stretch === undefined ? one : soFarOf(one, now, atEnd)
+const closeStretch = (one: Interaction, now: number, key: StretchKey | null): Interaction => {
+  const ran = one.stretch === undefined ? one : soFarOf(one, now)
   return { ...ran, stretch: { since: now, key } }
 }
 
 // A running interaction so far, its stretch given to its part: a drawing
 // mid-turn adds up the way the finished turn will.
-const soFarOf = (one: Interaction, now: number, atEnd = false): Interaction => {
+const soFarOf = (one: Interaction, now: number): Interaction => {
   if (one.end !== null || one.stretch === undefined || one.stretch.key === null || now <= one.stretch.since) return one
-  const key = atEnd && one.stretch.key === 'betweenMs' ? 'afterMs' : one.stretch.key
-  return plus(one, { ...NO_SUMS, [key]: now - one.stretch.since })
+  return plus(one, { ...NO_SUMS, [one.stretch.key]: now - one.stretch.since })
 }
 
 // Every day's finished interactions plus the running one so far.
@@ -548,9 +516,6 @@ const demoDaysOf = (now: number): Day[] =>
       writingMs: Math.round(claude * 0.2),
       toolMs: Math.round(claude * 0.2),
       subagentMs: Math.round(claude * 0.05),
-      // Misc, the 10% left, as the experiment splits it; the rest is other.
-      betweenMs: Math.round(claude * 0.05),
-      afterMs: Math.round(claude * 0.02),
       toolCalls: turns * 6,
       inTokens: turns * 250_000,
       outTokens: turns * 3_000,
@@ -778,14 +743,7 @@ export const register: Register = (on, options) => {
     const enter = async (state: StepState) => {
       if (main && live.step !== state) await change($, () => (live.step = state))
     }
-    if (main) {
-      // A call refused at its check never runs: its decision ends here.
-      await change($, () => {
-        live.checks.clear()
-        live.step = 'modelWait'
-      })
-      live.steps++
-    }
+    if (main) await change($, () => (live.step = 'modelWait'))
 
     try {
       for await (const chunk of next(e)) {
@@ -812,27 +770,11 @@ export const register: Register = (on, options) => {
     }
   })
 
-  // Experiment: a main-loop call's permission decision runs from its check
-  // until the tool starts.
-  on('tool.check', async ($, e, next) => {
-    const id = e.tool_use_id
-    if (e.agentId === undefined && id !== undefined) {
-      await change($, () => live.checks.add(id))
-    }
-
-    return next(e)
-  })
-
   on('tool.call', async ($, e, next) => {
     const main = e.agentId === undefined
     const kind = ASKS_THE_PERSON.has(e.tool) ? 'asks' : RUNS_A_SUBAGENT.has(e.tool) ? 'agents' : 'tools'
     if (main) {
-      await change($, () => {
-        // Its own decision ends; failing an id to match, the oldest one.
-        const id = e.tool_use_id !== undefined && live.checks.has(e.tool_use_id) ? e.tool_use_id : [...live.checks][0]
-        if (id !== undefined) live.checks.delete(id)
-        live[kind]++
-      })
+      await change($, () => live[kind]++)
     }
     try {
       return await next(e)
@@ -857,7 +799,7 @@ export const register: Register = (on, options) => {
       return ran
     }
 
-    await change($, () => Object.assign(live, { step: null, tools: 0, agents: 0, asks: 0, checks: new Set<string>() }), true)
+    await change($, () => Object.assign(live, { step: null, tools: 0, agents: 0, asks: 0 }))
     const end = await $.clock.now()
     const list = await read($, interactions)
     const at = list.findIndex(one => one.id === e.turnId && one.end === null)
@@ -965,6 +907,7 @@ export const register: Register = (on, options) => {
     const now = await $.clock.now()
     const grand = grandOf(list, kept, now)
     const grandClaude = claudeOf(grand, grand.wallMs)
+    const grandMisc = miscOf(grand, grand.wallMs)
     const efficiency = efficiencyOf(grand)
     const earlier = past.filter(one => one.sessionId !== sessionId)
 
@@ -1004,14 +947,7 @@ export const register: Register = (on, options) => {
           label: durationOf(grand[part.key]),
           color: COLORS[part.column],
         })),
-        // Experiment: misc as the parts it was measured in.
-        ...miscPartsOf(grand, grand.wallMs).map((part, i) => ({
-          name: `Misc: ${part.name}`,
-          ms: part.ms,
-          label: durationOf(part.ms),
-          color: MISC_SHADES[i % MISC_SHADES.length] ?? COLORS.misc,
-          aside: true,
-        })),
+        { name: 'Misc', ms: grandMisc, label: durationOf(grandMisc), color: COLORS.misc },
       ]
         .filter(slice => empty || slice.ms > 0)
         // Largest share first.
