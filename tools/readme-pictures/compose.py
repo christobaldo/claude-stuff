@@ -20,17 +20,20 @@ parts.append(f'<text x="18" y="22" font-family="{FONT}" font-size="13" font-weig
 parts.append(f'<text x="WIDTH18" y="22" text-anchor="end" font-family="{FONT}" font-size="12" fill="#888">/session-monitor</text>')
 y = 62
 svgs = d['svgs']; gauges = svgs[:6]; donuts = svgs[6:8]
-# the two quota rows side by side
-qx = 22
+# the two quota rows, one under the other, as the pane draws them
+right = 0
 for row in range(2):
     name, about = T[row*2]['text'], T[row*2+1]['text']
-    parts.append(f'<text x="{qx}" y="{y}" font-family="{FONT}" font-size="12" font-weight="600" fill="#333">{esc(name)}</text>')
-    parts.append(f'<text x="{qx + 8 + len(name)*7.2:.0f}" y="{y}" font-family="{FONT}" font-size="12" fill="#888">{esc(about)}</text>')
-    gx = qx
-    for g in gauges[row*3:row*3+3]:
+    parts.append(f'<text x="22" y="{y}" font-family="{FONT}" font-size="12" font-weight="600" fill="#333">{esc(name)}</text>')
+    ax = 22 + 8 + len(name)*7.2
+    parts.append(f'<text x="{ax:.0f}" y="{y}" font-family="{FONT}" font-size="12" fill="#888">{esc(about)}</text>')
+    right = max(right, ax + len(about)*6.6)
+    gx = 22
+    row_gauges = gauges[row*3:row*3+3]
+    for g in row_gauges:
         parts.append(nested(g['source'], gx, y + 6)); gx += g['width'] + 12
-    qx = max(gx + 40, qx + 8 + len(name)*7.2 + len(about)*6.6 + 40)
-y += 6 + max(g['height'] for g in gauges) + 24
+    right = max(right, gx)
+    y += 6 + max(g['height'] for g in row_gauges) + 26
 parts.append(f'<text x="22" y="{y}" font-family="{FONT}" font-size="12" font-weight="600" fill="#333">{esc(T[4]["text"])}</text>')
 y += 18
 parts.append(f'<text x="22" y="{y}" font-family="{FONT}" font-size="12" fill="#777">{esc(T[5]["text"])}</text>')
@@ -38,12 +41,13 @@ y += 12
 x = 22
 for sv in donuts:
     parts.append(nested(sv['source'], x, y)); x += sv['width'] + 30
+right = max(right, x - 30, 22 + len(T[5]['text'])*6.6)
 y += max(sv['height'] for sv in donuts) + 30
 def finish(parts, W, H, path):
     svg = f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" viewBox="0 0 {W} {H}">' + ''.join(parts).replace('HEIGHT', str(H - 1)).replace('WIDTH18', str(W - 18)).replace('WIDTH1', str(W - 1)) + '</svg>'
     open(path, 'w').write(svg)
     print(path, W, H)
-topW = int(max(gx for gx in [qx]) - 18)
+topW = int(right + 30)
 finish(parts, topW, y - 10, out)
 # the history, a card of its own
 parts = ['<rect x="0.5" y="0.5" width="WIDTH1" height="HEIGHT" rx="10" fill="#ffffff" stroke="#d8d8d8"/>']
