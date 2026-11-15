@@ -989,8 +989,10 @@ export const register: Register = (on, options) => {
       )
         .filter(part => part !== '')
         .join(' · ')
+      // Rounded up: "Used now" shows one decimal, so a forecast rounded to the
+      // nearest whole could read below it (37.4% used, 37% forecast).
       const shownOf = (forecast: Forecast) =>
-        forecast.outAt !== null ? `out ${momentOf(forecast.outAt, withDay)}` : `${Math.round(forecast.atReset)}%`
+        forecast.outAt !== null ? `out ${momentOf(forecast.outAt, withDay)}` : `${Math.ceil(forecast.atReset)}%`
       const aheadOf = (caption: string, forecast: Forecast | null | undefined, note: string): Chart => {
         if (forecast === null || forecast === undefined) {
           return { ...gaugeOf({ percent: 0, caption, note, center: '–' }), alt: `${title} ${caption}: ${note}` }
