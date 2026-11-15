@@ -167,9 +167,9 @@ const holdQuota = async ($: EngineInterface, held: Quota) => {
   const reading: Reading = { at: now, fiveHour: held.fiveHour?.percent, week: held.week?.percent }
   const kept = (await read($, readings)).filter(one => now - one.at <= KEEP_READINGS_MS)
   const last = kept.at(-1)
-  const next = last !== undefined && now - last.at < 60_000 ? [...kept.slice(0, -1), { ...reading, at: last.at }] : [...kept, reading]
-  await update($, readings, () => next)
-  await $.store.set('readings', next)
+  const latest = last !== undefined && now - last.at < 60_000 ? [...kept.slice(0, -1), { ...reading, at: last.at }] : [...kept, reading]
+  await update($, readings, () => latest)
+  await $.store.set('readings', latest)
 }
 
 const readQuota = async ($: EngineInterface) => {
@@ -533,10 +533,10 @@ const saveSummary = async ($: EngineInterface) => {
   const grand = grandOf(await read($, interactions), kept, now)
   const summary: SessionSummary = { sessionId, startedAt: kept[0]?.startedAt ?? now, lastAt: now, ...grand }
   const stored = await read($, history)
-  const next = [summary, ...stored.filter(one => one.sessionId !== sessionId)].slice(0, KEEP_SESSIONS)
-  await update($, history, () => next)
-  await $.store.set('sessions', next)
-  const known = new Set(next.map(one => `${SNAPSHOT}${one.sessionId}`))
+  const sessions = [summary, ...stored.filter(one => one.sessionId !== sessionId)].slice(0, KEEP_SESSIONS)
+  await update($, history, () => sessions)
+  await $.store.set('sessions', sessions)
+  const known = new Set(sessions.map(one => `${SNAPSHOT}${one.sessionId}`))
   for (const key of await $.store.keys()) {
     if (key.startsWith(SNAPSHOT) && !known.has(key)) await $.store.delete(key)
   }
@@ -582,9 +582,9 @@ export const register: Register = (on, options) => {
     if (Array.isArray(stored)) {
       await update($, history, () => stored as SessionSummary[])
     }
-    const read = await $.store.get('readings')
-    if (Array.isArray(read)) {
-      await update($, readings, () => read as Reading[])
+    const storedReadings = await $.store.get('readings')
+    if (Array.isArray(storedReadings)) {
+      await update($, readings, () => storedReadings as Reading[])
     }
     await restoreSnapshot($)
     await $.command.register({
