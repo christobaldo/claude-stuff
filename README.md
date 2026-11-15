@@ -164,6 +164,9 @@ claude plugin test mods/session-monitor
 
 To try changes live without installing, start a session with `claude --plugin-dir mods/session-monitor`.
 
+The README pictures in `docs/` are drawn from the mod itself, with made-up data: `tools/readme-pictures/make.sh`
+redraws them (it needs `claude` and Python 3).
+
 ## For Claude: installing a mod for your user
 
 When your user asks you to install a mod from this repository (for example "install session-monitor from

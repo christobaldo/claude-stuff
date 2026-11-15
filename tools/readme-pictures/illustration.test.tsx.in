@@ -1,0 +1,44 @@
+
+test('illustration', async ($, on) => {
+  const percents = { fiveHour: @@Q5@@, week: @@WK@@ }
+  const clock = engine(on, percents, @@NOW@@, @@STORED@@)
+  on('turn.step', async function* (_, e) {
+    await clock.sleep(1400)
+    yield { kind: 'thinking' as const, index: 0, text: 'hmm' }
+    await clock.sleep(2100)
+    yield { kind: 'text' as const, index: 1, text: 'ok' }
+    await clock.sleep(3900)
+    const usage = { model: 'opus', input_tokens: 2000, output_tokens: 2300, cache_read_input_tokens: 720000, cache_creation_input_tokens: 38000 }
+    yield { kind: 'stop' as const, stopReason: 'end_turn' as const, usage }
+    return { turnId: e.turnId, index: e.index, answer: 'ok', toolUses: [], stopReason: 'end_turn' as const, usage }
+  })
+  on('tool.call', async () => {
+    await clock.sleep(3100)
+    return { result: {} }
+  })
+  await $.session.start({ cwd: '/', surface: 'desktop', isInteractive: true })
+  await run($, 'demo')
+  await $.turn.start({ text: 'Commit it', turnId: 'c' })
+  await clock.advance(400)
+  const step = (async () => {
+    for await (const _ of $.turn.step({ turnId: 'c', index: 0, model: 'opus', messageCount: 3 })) {
+      // drained
+    }
+  })()
+  await clock.advance(7400)
+  await step
+  for (const n of [1, 2]) {
+    const call = $.tool.call({ tool: 'Bash', command: 'git commit', description: 'd' } as never)
+    await clock.advance(3100)
+    await call
+  }
+  await clock.advance(1500)
+  percents.fiveHour = @@Q5END@@
+  percents.week = @@WKEND@@
+  await $.turn.complete({ ...DONE, answer: 'Done: committed as 4f2a91c.', turnId: 'c' })
+  const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
+  const texts = (await ui.findAll({ type: 'Text' })).map(cell => ({ text: cell.text ?? '', color: cell.props.color, bold: cell.props.bold, dim: cell.props.dimColor }))
+  const svgs = (await ui.findAll({ type: 'Svg' })).map(svg => svg.props)
+  await ui.unmount()
+  console.log('@@ILLUSTRATION@@' + JSON.stringify({ texts, svgs, line: await reply($, 'Done: committed as 4f2a91c.') }))
+})
