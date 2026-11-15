@@ -1010,11 +1010,11 @@ export const register: Register = (on, options) => {
         about,
         gauges: [
           { ...gaugeOf({ percent: window.percent, caption: 'Used now', note: '' }), alt: `${title} ${percentOf(window.percent)} used` },
-          aheadOf('At reset, pace so far', average, average ? soFar : missing || 'too early in the window'),
+          aheadOf('Forecast @ Avg Pace', average, average ? soFar : missing || 'too early in the window'),
           // Until the readings span enough, the pace so far stands in.
           recent
-            ? aheadOf(`At reset, ${recentPace} pace`, recent, `${paceOf(recent.pace)} over ${lookback}`)
-            : aheadOf(`At reset, ${recentPace} pace`, average, missing || 'Measuring recent pace'),
+            ? aheadOf(`Forecast @ ${recentPace} Avg`, recent, `${paceOf(recent.pace)} over ${lookback}`)
+            : aheadOf(`Forecast @ ${recentPace} Avg`, average, missing || 'Measuring recent pace'),
         ],
         words: [
           `${title} ${percentOf(window.percent)}${resets === '' ? '' : ` (resets ${resets})`}`,

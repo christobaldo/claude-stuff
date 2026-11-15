@@ -28,9 +28,9 @@ for the same morning.*
 - **In the prompt footer**, a label: `⏱ last 1m 29s · today 14m 02s · 5h 34% · wk 61%` (`paused` or `stopped` when so).
 - **`/session-monitor`** opens the Session Monitor pane:
   - **5h quota** and **Weekly quota**: a row each, with when the window started and when it resets, and its max pace left
-    (the %/h that would just reach 100% at the reset), then three gauges: **Used now**; **At reset, pace so far**
-    (the pace since the window started, carried on to the reset); **At reset, last hour's pace** (the last day's for
-    the week). Each is green, amber from 80%, or red with `out HH:MM` when that pace runs the window out before its
+    (the %/h that would just reach 100% at the reset), then three gauges: **Used now**; **Forecast @ Avg Pace**
+    (the pace since the window started, carried on to the reset); **Forecast @ last hour's Avg** (**Forecast @ last
+    day's Avg** for the week). Each is green, amber from 80%, or red with `out HH:MM` when that pace runs the window out before its
     reset; a forecast never shows less than what is used. The pace so far waits until 10% of the window has gone;
     until the readings (one a minute, kept 25 hours in the store) span 20 minutes (4 hours for the week), the last
     gauge shows the pace so far and says `Measuring recent pace`. The terminal shows the same as text.

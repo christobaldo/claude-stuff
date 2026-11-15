@@ -343,11 +343,11 @@ test('the quota forecast: the average pace since the window began, the recent pa
   expect(texts).toContainEqual(expect.stringMatching(/^started \d\d:00 · resets \d\d:00 · max pace left 25\.3%\/h$/))
   expect(alts).toContain('5h quota 62% used')
   // 62% over 3h 30m is 17.7%/h: 89% at the reset, amber.
-  expect(alts).toContainEqual(expect.stringMatching(/^5h quota At reset, pace so far: 89% \(17\.7%\/h since \d\d:00\)$/))
+  expect(alts).toContainEqual(expect.stringMatching(/^5h quota Forecast @ Avg Pace: 89% \(17\.7%\/h since \d\d:00\)$/))
   // 30 points in the last hour: 100% within 1h 16m, before the reset.
-  expect(alts).toContainEqual(expect.stringMatching(/^5h quota At reset, last hour's pace: out \d\d:46 \(30%\/h over the last hour\)$/))
+  expect(alts).toContainEqual(expect.stringMatching(/^5h quota Forecast @ last hour's Avg: out \d\d:46 \(30%\/h over the last hour\)$/))
   // The week has an hour of readings, short of 4: the pace so far stands in.
-  expect(alts).toContainEqual(expect.stringMatching(/^Weekly quota At reset, last day's pace: \d+% \(Measuring recent pace\)$/))
+  expect(alts).toContainEqual(expect.stringMatching(/^Weekly quota Forecast @ last day's Avg: \d+% \(Measuring recent pace\)$/))
 
   const terminal = await pane($, 'terminal')
   expect(terminal.joined).toMatch(/5h quota 62% \(resets \d\d:00\) · pace so far: 89% at reset · last hour's pace: out \d\d:46/)
