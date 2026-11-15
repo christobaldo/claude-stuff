@@ -116,7 +116,9 @@ normal text colour rather than dimmed, for contrast on dark themes.
 | `session.start`, `session.measure` | session start, each status refresh | Registers the command, restores saved days, reads the quota. |
 | `ui.render` | drawing a reply, the mode line, the pane | Adds the line under a reply, and draws the pane. |
 
-**Data and credentials.** The mod reads no credential, key or token, and sends nothing anywhere: it makes no network
+#### Privacy
+
+The mod reads no credential, key or token, and sends nothing anywhere: it makes no network
 call. It reads the session's own usage (`$.session.usage()`: the 5-hour and weekly quota percentages, token counts and
 cost) and keeps its figures in the session's state and in its own store file under `~/.claude/plugins/store/`.
 

@@ -6,6 +6,12 @@
     "name": "christobaldo",
     "email": "christobaldo.cbo@gmail.com"
   },
+  "homepage": "https://github.com/christobaldo/claude-stuff",
+  "repository": "https://github.com/christobaldo/claude-stuff",
+  "documentationUrl": "https://github.com/christobaldo/claude-stuff#session-monitor",
+  "supportUrl": "https://github.com/christobaldo/claude-stuff/issues",
+  "privacyPolicyUrl": "https://github.com/christobaldo/claude-stuff#privacy",
+  "termsOfServiceUrl": "https://github.com/christobaldo/claude-stuff/blob/main/LICENSE",
   "types": "./types/index.d.ts",
   "userConfig": {
     "commandName": {
