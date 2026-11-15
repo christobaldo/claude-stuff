@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112" fill="#1f1e1d"/>
+  <!-- stopwatch crown -->
+  <rect x="226" y="58" width="60" height="34" rx="10" fill="#e6e6e6"/>
+  <rect x="244" y="88" width="24" height="30" fill="#e6e6e6"/>
+  <!-- gauge track and value -->
+  <path d="M 106 330 A 150 150 0 0 1 406 330" fill="none" stroke="#4a4846" stroke-width="44" stroke-linecap="round"/>
+  <path d="M 106 330 A 150 150 0 0 1 311.2 190.5" fill="none" stroke="#d97757" stroke-width="44" stroke-linecap="round"/>
+  <!-- needle -->
+  <line x1="256" y1="330" x2="302" y2="214" stroke="#f5f5f5" stroke-width="18" stroke-linecap="round"/>
+  <circle cx="256" cy="330" r="26" fill="#f5f5f5"/>
+  <!-- three bars: the parts of Claude's time -->
+  <rect x="136" y="392" width="120" height="26" rx="13" fill="#4f9dde"/>
+  <rect x="266" y="392" width="70" height="26" rx="13" fill="#d4709f"/>
+  <rect x="346" y="392" width="30" height="26" rx="13" fill="#e3a857"/>
+</svg>
