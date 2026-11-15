@@ -106,6 +106,20 @@ have not been tried. In VS Code the line under a reply sits in a "From the sessi
 draws around anything a plugin adds, and it may show above the reply rather than under it; a mod can't change either. Off the terminal, secondary text is drawn in the theme's
 normal text colour rather than dimmed, for contrast on dark themes.
 
+**What the hooks do.** The mod only watches and draws; it never blocks, rewrites or asks about anything.
+
+| Hook | When | What it does |
+| --- | --- | --- |
+| `tool.call` | every tool call | Notes when the call starts and ends, to time tools, subagents and questions to you. Decides nothing: it always passes the call on unchanged (`next(e)`), and if it fails, the call goes on as if the hook were not there. |
+| `command.run` | only the mod's own command (`/session-monitor`, or the name set in its options) | Answers that command (`help`, `pause`, `reset`, `chatoff`…). It touches no other command. |
+| `turn.start`, `turn.step`, `turn.complete` | each prompt, model step and answer | Times the interaction and adds up its tokens. |
+| `session.start`, `session.measure` | session start, each status refresh | Registers the command, restores saved days, reads the quota. |
+| `ui.render` | drawing a reply, the mode line, the pane | Adds the line under a reply, and draws the pane. |
+
+**Data and credentials.** The mod reads no credential, key or token, and sends nothing anywhere: it makes no network
+call. It reads the session's own usage (`$.session.usage()`: the 5-hour and weekly quota percentages, token counts and
+cost) and keeps its figures in the session's state and in its own store file under `~/.claude/plugins/store/`.
+
 ## Install
 
 One line in a shell, then restart Claude (user scope: every new session loads the mod):

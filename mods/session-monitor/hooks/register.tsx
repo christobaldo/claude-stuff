@@ -18,6 +18,7 @@ import type {
 
 import { COLORS, donutOf, gaugeOf, SIGNALS } from './charts'
 import { outlookOf, signalOf } from './forecast'
+import { VERSION } from './version'
 import type { Forecast, WindowKind } from './forecast'
 
 const PANE = 'session-monitor'
@@ -662,10 +663,7 @@ export const register: Register = (on, options) => {
         return { text: `Removed ${plural(count, 'demo day')}.` }
       }
       case 'version': {
-        // The manifest's version, so there is one place to bump it.
-        const manifest = await $.fs.read(`${$.plugin.root}/.claude-plugin/plugin.json`).catch(() => '{}')
-        const version = (JSON.parse(manifest) as { version?: unknown }).version
-        return { text: `Session Monitor ${typeof version === 'string' ? version : '(version unknown)'}` }
+        return { text: `Session Monitor ${VERSION}` }
       }
       case 'chaton':
       case 'chatoff': {
@@ -680,6 +678,8 @@ export const register: Register = (on, options) => {
         return { text: `Unknown argument "${words}".\n${help}` }
     }
   })
+    // Its own command alone: a failure answers with a note, never a refusal of anything else.
+    .catch(() => ({ text: 'Session Monitor ran into an error; claude --debug shows it.' }))
 
   // The quota as the engine pushes it: after each turn and when a window moves.
   on('session.measure', async ($, e, next) => {
@@ -785,6 +785,8 @@ export const register: Register = (on, options) => {
       if (kind !== 'asks') await (main ? add($, { toolCalls: 1 }) : addTo($, e.agentId, { toolCalls: 1 }))
     }
   })
+    // It never decides: a failure here passes the call on as if the hook were not there.
+    .catch(($, e, next) => next(e))
 
   on('turn.complete', async ($, e, next) => {
     const ran = await next(e)

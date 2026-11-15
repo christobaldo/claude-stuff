@@ -2,6 +2,8 @@ import { expect, mock, test } from 'claude-code/testing'
 import type { TestBody } from 'claude-code/testing'
 import type { On } from 'claude-code'
 
+import { VERSION } from '../hooks/version'
+
 const PANE = {
   plugin: 'session-monitor',
   component: 'Pane',
@@ -264,7 +266,7 @@ test('reset wipes everything; help lists the arguments', async ($, on) => {
   const help = (await run($, 'help')).text ?? ''
   for (const word of ['startday:', 'stopday:', 'pause:', 'reset:', 'version:', 'help:']) expect(help).toContain(word)
   expect(help).not.toContain('resume')
-  expect((await run($, 'version')).text).toMatch(/^Session Monitor (\d+\.\d+\.\d+|\(version unknown\))$/)
+  expect((await run($, 'version')).text).toBe(`Session Monitor ${VERSION}`)
   expect((await run($, 'nonsense')).text).toMatch(/^Unknown argument "nonsense"\./)
 })
 
