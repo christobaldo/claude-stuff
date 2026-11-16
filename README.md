@@ -37,8 +37,8 @@ for the same morning.*
   - **Interactions**: days, interactions, interactions per day, Claude's average time per interaction, efficiency, the
     cached share of input tokens; then two charts (desktop): **Operator efficiency** (Claude, user
     answering, was idle) and **Claude's time** (its parts, largest first), shown from the start with every slice
-    at 0s until the first answer ends; while an interaction runs they are redrawn at most every 5 seconds. Pointing at a slice, or at its legend row, thickens the slice, fades the others
-    and highlights the row.
+    at 0s until the first answer ends; while an interaction runs they are redrawn at most every 5 seconds. Pointing at a slice, or at its legend row, thickens the slice, fades the others,
+    highlights the row and shows a tooltip saying what the part counts (Writing, Misc…).
   - **This session history**: a table in three groups set off by bars: `# · Start → End · Was idle · User answering`
     (grey and red), then in Claude's orange `Claude · Model wait · Thinking · Writing · Tools · Subagents · Misc`
     (**Claude**, in bold, is the sum of the others), then `Calls · In · Out · 5h quota · Week quota` (what each

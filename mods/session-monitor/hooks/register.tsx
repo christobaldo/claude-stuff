@@ -74,13 +74,17 @@ const readings = atom({ plugin: 'session-monitor', key: 'readings' } as const, [
 const KEEP_READINGS_MS = 25 * 3_600_000
 
 // Claude's parts, in the order they are shown; misc is what they leave.
+// `about` is the part's tooltip in the donut.
 const PARTS = [
-  { key: 'modelWaitMs', column: 'modelWait', name: 'model wait' },
-  { key: 'thinkingMs', column: 'thinking', name: 'thinking' },
-  { key: 'writingMs', column: 'writing', name: 'writing' },
-  { key: 'toolMs', column: 'tools', name: 'tools' },
-  { key: 'subagentMs', column: 'subagents', name: 'subagents' },
+  { key: 'modelWaitMs', column: 'modelWait', name: 'model wait', about: 'Model wait: the request is sent and nothing has streamed back yet.' },
+  { key: 'thinkingMs', column: 'thinking', name: 'thinking', about: 'Thinking: the model streams its reasoning.' },
+  { key: 'writingMs', column: 'writing', name: 'writing', about: "Writing: the model streams visible text or a tool call's arguments." },
+  { key: 'toolMs', column: 'tools', name: 'tools', about: 'Tools: at least one tool is running; parallel calls count once.' },
+  { key: 'subagentMs', column: 'subagents', name: 'subagents', about: 'Subagents: an Agent tool is running, and no other tool.' },
 ] as const
+
+const MISC_ABOUT =
+  "Misc: what Claude's other parts leave, the engine's own work between steps (building the request, hooks, the turn's start and end, permission decisions)."
 
 const capital = (text: string) => text.charAt(0).toUpperCase() + text.slice(1)
 
@@ -934,9 +938,12 @@ export const register: Register = (on, options) => {
     const empty = grand.wallMs === 0
     {
       const slices = [
-        { name: 'Claude', ms: grandClaude, label: durationOf(grandClaude), color: COLORS.claude },
-        { name: 'User answering', ms: grand.answeringMs, label: durationOf(grand.answeringMs), color: COLORS.answering },
-        { name: 'Was idle', ms: grand.idleMs, label: durationOf(grand.idleMs), color: COLORS.idle },
+        { name: 'Claude', ms: grandClaude, label: durationOf(grandClaude), color: COLORS.claude,
+          about: "Claude: the interactions' wall time, less the time you spent answering Claude's questions." },
+        { name: 'User answering', ms: grand.answeringMs, label: durationOf(grand.answeringMs), color: COLORS.answering,
+          about: 'User answering: a question or plan from Claude waits for your answer (AskUserQuestion, ExitPlanMode).' },
+        { name: 'Was idle', ms: grand.idleMs, label: durationOf(grand.idleMs), color: COLORS.idle,
+          about: 'Was idle: the gap between an answer and your next prompt, breaks left out.' },
       ].filter(slice => empty || slice.ms > 0)
       fresh.push({
         ...donutOf({ center: empty ? '–' : `${efficiency ?? 0}%`, caption: 'Operator efficiency', slices }),
@@ -948,8 +955,9 @@ export const register: Register = (on, options) => {
           ms: grand[part.key],
           label: durationOf(grand[part.key]),
           color: COLORS[part.column],
+          about: part.about,
         })),
-        { name: 'Misc', ms: grandMisc, label: durationOf(grandMisc), color: COLORS.misc },
+        { name: 'Misc', ms: grandMisc, label: durationOf(grandMisc), color: COLORS.misc, about: MISC_ABOUT },
       ]
         .filter(slice => empty || slice.ms > 0)
         // Largest share first.

@@ -30,7 +30,11 @@ const centerSizeOf = (text: string) => {
 const escape = (text: string) => text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 
 // `aside`: its legend row goes in a second column, so a long legend stays short.
-export type Slice = { name: string; ms: number; label: string; color: string; aside?: boolean }
+// `about`: what the slice counts, shown as a tooltip on its arc and legend row.
+export type Slice = { name: string; ms: number; label: string; color: string; aside?: boolean; about?: string }
+
+// A native SVG tooltip: the first child of the element it explains.
+const tipOf = (slice: Slice) => (slice.about === undefined ? '' : `<title>${escape(slice.about)}</title>`)
 
 // A donut of the slices' shares with the center text inside, and beside it
 // the caption over one legend row per slice, in one or two columns.
@@ -57,7 +61,7 @@ export const donutOf = (chart: { center: string; caption: string; slices: readon
       const arc =
         `<circle class="arc a${i}" cx="48" cy="48" r="${r}" fill="none" stroke="${slice.color}" stroke-width="14" ` +
         `stroke-dasharray="${length.toFixed(2)} ${(around - length).toFixed(2)}" stroke-dashoffset="${(-offset).toFixed(2)}" ` +
-        `transform="rotate(-90 48 48)"/>`
+        `transform="rotate(-90 48 48)">${tipOf(slice)}</circle>`
       offset += length
       return arc
     })
@@ -68,7 +72,7 @@ export const donutOf = (chart: { center: string; caption: string; slices: readon
       const x = aside ? sideX : 100
       const y = 34 + (aside ? side : main).indexOf(slice) * 16
       return (
-        `<g class="row l${i}"><rect class="hl" x="${x}" y="${y - 12}" width="${widthOf(aside ? side : main) - 2}" ` +
+        `<g class="row l${i}">${tipOf(slice)}<rect class="hl" x="${x}" y="${y - 12}" width="${widthOf(aside ? side : main) - 2}" ` +
         `height="16" rx="4" fill="${slice.color}" fill-opacity="0.22"/>` +
         `<rect x="${x + 4}" y="${y - 9}" width="10" height="10" rx="2" fill="${slice.color}"/>` +
         `<text class="t" x="${x + 20}" y="${y}">${escape(rowOf(slice))}</text></g>`

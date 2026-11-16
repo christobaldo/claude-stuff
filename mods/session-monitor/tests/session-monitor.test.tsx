@@ -85,11 +85,12 @@ const reply = async ($: Engine, text: string) => {
 const pane = async ($: Engine, surface: 'desktop' | 'terminal' = 'desktop') => {
   const ui = await $.ui.mount({ ...PANE, surface })
   const texts = (await ui.findAll({ type: 'Text' })).map(cell => cell.text ?? '')
-  const charts = (await ui.findAll({ type: 'Svg' })).length
+  const svgs = (await ui.findAll({ type: 'Svg' })).map(svg => String(svg.props.source))
+  const charts = svgs.length
   await ui.unmount()
   // The line under the Interactions title.
   const figures = texts[texts.indexOf('Interactions') + 1]
-  return { texts, joined: texts.join('|'), charts, figures }
+  return { texts, joined: texts.join('|'), charts, svgs, figures }
 }
 
 test('Claude\'s parts add up to its time, misc taking the rest', async ($, on) => {
@@ -143,7 +144,7 @@ test('Claude\'s parts add up to its time, misc taking the rest', async ($, on) =
     /\n\n\*⏱ #2 · 09:00:31 → 09:00:46 · was idle 30\.0s · user answering 4\.0s · Claude 11\.0s — model wait 1\.0s · thinking 3\.0s · writing 1\.5s · tools 2\.0s \(2 calls\) · subagents 3\.0s · misc 0\.5s · 10k in \/ 1\.5k out\* · 🟢 \*\*5h \+0\.8% \(30\.8%\)\*\* · 🟡 \*\*week \+0\.2% \(60\.2%\)\*\*$/,
   )
 
-  const { texts, joined, charts } = await pane($)
+  const { texts, joined, charts, svgs } = await pane($)
   // Each quota window titled with its start, its reset and the fastest pace
   // that lasts to it; then the interactions.
   expect(texts[0]).toBe('5h quota')
@@ -170,6 +171,9 @@ test('Claude\'s parts add up to its time, misc taking the rest', async ($, on) =
   expect(joined).toContain('1|09:00:00|→|09:00:01|-|-|│|1.0s|-|-|-|-|-|1.0s|│|-|-|-|+0|+0|│|first')
   // Efficiency and Claude's parts, then three gauges for each quota window.
   expect(charts).toBe(8)
+  // Each legend item explains itself in a tooltip, on its row and its arc.
+  const tips = svgs.join('').match(/<title>[^<]*<\/title>/g) ?? []
+  expect(tips).toContain("<title>Writing: the model streams visible text or a tool call's arguments.</title>")
 
   // The terminal has no charts: the quota as words, then the same table.
   const terminal = await pane($, 'terminal')
