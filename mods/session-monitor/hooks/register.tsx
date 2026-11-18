@@ -865,8 +865,9 @@ export const register: Register = (on, options) => {
     const own = await next(e)
     const { Box, Markdown } = $.ui.resolve(e)
 
+    // A blank line between the reply and the line, so the two read apart.
     return (
-      <Box flexDirection="column">
+      <Box flexDirection="column" gap={1}>
         {own}
         <Markdown text={added.join('\n\n')} />
       </Box>

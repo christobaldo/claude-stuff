@@ -41,12 +41,14 @@ def para(segs, size=13, gap=19):
     y += 10
 user('Fix the login redirect bug')
 para([("The redirect lost the original path when the session had expired. It is now kept in the sign-in link and restored after sign-in; a test covers it.", 't')])
+y += 18  # the blank line the mod puts between the reply and its line
 para(line_segments('⏱ #1 · 09:50:05 → 09:51:16 · Claude 1m 11s — model wait 4.1s · thinking 11.2s · writing 14.8s · tools 38.5s (6 calls) · misc 2.8s · 1.52M in / 3.6k out',
      [('🟢', '5h +0.6% (8.6%)'), ('🟢', 'week +0.2% (41.2%)')]), size=12.5, gap=18)
 para([('📅 Sun 01 Nov 2026: 18 interactions · was idle 1h 10m · user answering 4m 00s · Claude 38m 00s · efficiency 34% — model wait 11m 24s (30%) · thinking 5m 42s (15%) · writing 7m 36s (20%) · tools 7m 36s (20%) (108 calls) · subagents 1m 54s (5%) · misc 3m 48s (10%) · 4.50M in / 54k out', 'i')], size=12.5, gap=18)
 y += 6
 user('Commit it')
 para([('Done: committed as 4f2a91c.', 't')])
+y += 18  # the blank line the mod puts between the reply and its line
 para(line_segments('⏱ #5 · 10:01:37 → 10:01:52 · was idle 30.0s · Claude 15.5s — model wait 1.4s · thinking 2.1s · writing 3.9s · tools 6.2s (2 calls) · misc 1.9s · 760k in / 2.3k out',
      [('🟢', '5h +2% (14.4%)'), ('🟢', 'week +0.6% (43%)')]), size=12.5, gap=18)
 H = int(y)
